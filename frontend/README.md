@@ -1,75 +1,59 @@
-# React + TypeScript + Vite
+# LinkLab frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19, TypeScript, Vite, Tailwind CSS, shadcn/Base UI, React Router, TanStack Query, Lucide, Bklit charts, and QRCode.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```sh
+npm ci
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Open the URL printed by Vite. The existing ASP.NET template does not need to run.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```sh
+npm run build
+npm run lint
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Pages
 
+Routes are declared in `src/app/router.tsx` using `createBrowserRouter` and rendered with `RouterProvider`.
+
+| URL | Page |
+| --- | --- |
+| `/` | Create and manage links, search, sort, pagination, CSV export |
+| `/analytics` | Workspace click history, sources, popular links, recent activity |
+| `/links/:id` | Individual link analytics, copy, QR, deletion |
+| `/guide` | Usage and demo limitations |
+| `/:code` | Browser-local redirect and click recording |
+| `/404` and unmatched routes | Branded not-found page |
+
+A production static host must rewrite frontend route requests to `index.html`. Once a backend handles `/:shortCode`, configure that route ahead of the frontend fallback. Browser redirects in this demo are not HTTP 302 responses, and the frontend 404 is not an HTTP 404 response.
+
+## Demo data and future API integration
+
+`src/features/links/repository.ts` is the asynchronous data-access boundary; `queries.ts` provides Query hooks and mutation invalidation. Replace the repository methods with API calls when endpoints are ready. No requests currently target the backend template.
+
+The first visit seeds eight example links and illustrative click events. Creation, deletion, and visits persist in local storage under `linklab.links.v1`. New links use seven-character codes from Web Crypto and check local uniqueness. Short URLs are built from the current origin, including the development port. The same destination can be shortened more than once.
+
+Links and QR codes work only on the app origin and browser where their records exist. There is no shared storage or cross-device redirect service yet. Real referrer collection also belongs to the backend; demo visits use Direct / Unknown. Analytics aggregate seven UTC calendar dates, including zero-visit days. Clearing site storage resets the demo. Theme choice persists separately under `linklab.theme`.
+
+Charts are installed from the configured Bklit registry into `src/components/charts`. ESLint has narrowly scoped exceptions for upstream chart component patterns; authored application code retains the normal lint rules.
+
+## Browser verification
+
+The Playwright suite covers validation, duplicate destination creation, persistence, clipboard, QR PNG downloads, delete confirmation, redirects and click recording, navigation, analytics filters, CSV downloads, unknown links, mobile layout, pagination, and theme persistence.
+
+Start the dev server in another terminal, install Playwright Chromium, then run:
+
+```sh
+npx playwright install chromium
+npm run test:e2e
+```
+
+For a different port or an existing Chromium installation:
+
+```sh
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:5174 PLAYWRIGHT_CHROMIUM_PATH=/path/to/chrome npm run test:e2e
 ```
