@@ -25,3 +25,6 @@ frontend/*.local
 *.njsproj
 *.sln
 *.sw?
+
+# Local visual review artifacts
+.impeccable/review/

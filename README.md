@@ -2,9 +2,6 @@
 
 **Project Type:** Full-stack web application  
 **Category:** Developer Tools / Analytics / Productivity  
-**Difficulty:** Beginner–Intermediate  
-**Estimated Development Time:** 6–8 hours  
-**Primary Learning Goal:** ASP.NET Core Web API development with C#
 
 ---
 
@@ -183,7 +180,7 @@ This is a lower-priority MVP feature if development time becomes limited.
 - TanStack Query — server-state management and caching
 - React Router — frontend navigation
 - Bklit UI (primary) & Recharts (secondary) — analytics charts
-- Shadcn UI for reusable components
+- Shadcn UI for reusable
 - Lucide React — iconography
 - QR code library — QR generation
 
