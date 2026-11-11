@@ -1,36 +1,38 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { linksRepository } from "@/features/links/repository";
-import { NotFound } from "./not-found";
+
+function getBackendRedirectUrl(code: string | undefined) {
+  if (!code) return null;
+
+  try {
+    const backendOrigin =
+      import.meta.env.VITE_BACKEND_URL || "http://localhost:5029";
+    const backendUrl = new URL(`/${encodeURIComponent(code)}`, backendOrigin);
+    if (document.referrer) {
+      const referrerHost = new URL(document.referrer).hostname;
+      if (referrerHost) {
+        backendUrl.searchParams.set("referrer", referrerHost);
+      }
+    }
+    return backendUrl.href;
+  } catch {
+    return null;
+  }
+}
+
 export function RedirectLink() {
   const { code } = useParams();
-  const started = useRef(false);
-  const [status, setStatus] = useState("loading");
+  const started = useRef<string | null>(null);
+  const backendUrl = getBackendRedirectUrl(code);
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    linksRepository
-      .visit(code || "")
-      .then((link) => {
-        if (!link) {
-          setStatus("missing");
-          return;
-        }
-        const url = new URL(link.url);
-        if (!["https:", "http:"].includes(url.protocol)) {
-          setStatus("missing");
-          return;
-        }
-        window.location.replace(url.href);
-      })
-      .catch(() => setStatus("error"));
-  }, [code]);
-  return status === "missing" ? (
-    <NotFound />
-  ) : status === "error" ? (
+    if (!code || !backendUrl || started.current === code) return;
+    started.current = code;
+    window.location.replace(backendUrl);
+  }, [backendUrl, code]);
+  return !backendUrl ? (
     <div className="empty-state" role="alert">
       <h1>We couldn’t open this link.</h1>
-      <p>Check browser storage and reload to try again.</p>
+      <p>Check the backend URL configuration and try again.</p>
     </div>
   ) : (
     <div className="empty-state" role="status">

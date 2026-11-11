@@ -102,7 +102,7 @@ export function Analytics() {
         <div className="analytics-context">
           <Globe2 size={16} />
           Workspace overview
-          <span>{links.length} links · Sample and local activity</span>
+          <span>{links.length} links · Live workspace activity</span>
         </div>
       )}
       <MetricStrip
@@ -239,20 +239,23 @@ export function Analytics() {
               </div>
               <div>
                 <dt>Storage</dt>
-                <dd>This browser</dd>
+                <dd>LinkLab database</dd>
               </div>
               <div>
                 <dt>Status</dt>
                 <dd className="active-label">
                   <span className="status-dot" />
-                  Active locally
+                  Active
                 </dd>
               </div>
             </dl>
           ) : (
             <ol className="popular-list">
               {[...links]
-                .sort((a, b) => b.events.length - a.events.length)
+                .sort(
+                  (a, b) =>
+                    b.analytics.totalClicks - a.analytics.totalClicks,
+                )
                 .slice(0, 5)
                 .map((l, i) => (
                   <li key={l.id}>
@@ -261,7 +264,7 @@ export function Analytics() {
                       <strong>{l.title}</strong>
                       <span>/{l.code}</span>
                     </Link>
-                    <span>{formatNumber(l.events.length)}</span>
+                    <span>{formatNumber(l.analytics.totalClicks)}</span>
                   </li>
                 ))}
               {!links.length && (

@@ -7,7 +7,7 @@ export function DataState({
   return query.isError ? (
     <div className="empty-state" role="alert">
       <h2>We couldn’t load your workspace.</h2>
-      <p>Check that browser storage is available, then try again.</p>
+      <p>Check that the backend is running and the API URL is configured.</p>
       <Button onClick={() => query.refetch()}>Try again</Button>
     </div>
   ) : (

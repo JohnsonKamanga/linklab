@@ -95,7 +95,7 @@ export function LinkActions({
         open={modal === "delete"}
         onClose={() => setModal(null)}
         title="Delete this link?"
-        description="This short link will stop working in this browser. Its click history will also be permanently deleted."
+        description="This short link will stop working. Its click history will also be permanently deleted."
       >
         <div className="my-6 rounded-lg bg-muted p-4">
           <strong>{link.title}</strong>
@@ -116,7 +116,7 @@ export function LinkActions({
                 },
                 onError: () =>
                   notify(
-                    "Could not delete the link. Check browser storage and try again.",
+                    "Could not delete the link. Check the backend connection and try again.",
                     true,
                   ),
               })

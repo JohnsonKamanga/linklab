@@ -36,7 +36,9 @@ export function Dashboard() {
   if (!query.data) return <DataState query={query} />;
   const links = query.data;
   const stats = metrics(links);
-  const top = [...links].sort((a, b) => b.events.length - a.events.length)[0];
+  const top = [...links].sort(
+    (a, b) => b.analytics.totalClicks - a.analytics.totalClicks,
+  )[0];
   const filtered = links
     .filter((l) =>
       `${l.title} ${l.url} ${l.code}`
@@ -45,7 +47,7 @@ export function Dashboard() {
     )
     .sort((a, b) =>
       sort === "clicks"
-        ? b.events.length - a.events.length
+        ? b.analytics.totalClicks - a.analytics.totalClicks
         : sort === "oldest"
           ? a.createdAt.localeCompare(b.createdAt)
           : b.createdAt.localeCompare(a.createdAt),
@@ -91,9 +93,9 @@ export function Dashboard() {
           },
           {
             label: "Top performing link",
-            value: top?.events.length ? `/${top.code}` : "—",
-            note: top?.events.length
-              ? `${formatNumber(top.events.length)} clicks · ${top.title}`
+            value: top?.analytics.totalClicks ? `/${top.code}` : "—",
+            note: top?.analytics.totalClicks
+              ? `${formatNumber(top.analytics.totalClicks)} clicks · ${top.title}`
               : "Your next great link awaits",
             icon: Trophy,
           },
@@ -210,7 +212,7 @@ export function Dashboard() {
                         </a>
                       </td>
                       <td className="numeric click-count">
-                        {formatNumber(link.events.length)}
+                        {formatNumber(link.analytics.totalClicks)}
                       </td>
                       <td className="created-date">
                         {formatDate(link.createdAt)}
@@ -276,7 +278,7 @@ export function Dashboard() {
       <div className="under-table">
         <span>
           <span className="status-dot" />
-          Your links stay in this browser.
+          Your links are saved to the LinkLab workspace.
         </span>
         <Link to="/analytics">
           Explore your analytics

@@ -47,9 +47,11 @@ export function CreateLink() {
         setUrl("");
         notify("Your short link is ready to share.");
       },
-      onError: () =>
+      onError: (error) =>
         setError(
-          "Could not save your link. Check that browser storage is available and try again.",
+          error instanceof Error
+            ? error.message
+            : "Could not save your link. Check the backend connection and try again.",
         ),
     });
   }

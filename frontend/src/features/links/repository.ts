@@ -1,149 +1,113 @@
+import { apiRequest } from "@/lib/api";
+
 export type ClickEvent = { at: string; referrer: string };
+export type DailyClick = { date: string; count: number };
+export type TopReferrer = { domain: string; count: number };
+export type LinkAnalytics = {
+  totalClicks: number;
+  clicksToday: number;
+  clicksLast7Days: number;
+  lastAccessedAt: string | null;
+  dailyClicks: DailyClick[];
+  topReferrers: TopReferrer[];
+  recentClicks: ClickEvent[];
+};
 export type LinkRecord = {
   id: string;
   title: string;
   url: string;
   code: string;
   createdAt: string;
-  events: ClickEvent[];
+  analytics: LinkAnalytics;
 };
-const KEY = "linklab.links.v1";
-const day = 86400000;
-const titles = [
-  ".NET 8.0 release notes",
-  "The design engineering handbook",
-  "Introducing our new workspace",
-  "React documentation",
-  "Building for the web",
-  "Our open-source toolkit",
-  "November product update",
-  "Brand assets & guidelines",
-];
-const urls = [
-  "https://github.com/dotnet/aspnetcore/releases/tag/v8.0.0",
-  "https://vercel.com/design",
-  "https://www.notion.so/product",
-  "https://react.dev/learn",
-  "https://web.dev/learn",
-  "https://github.com/shadcn-ui/ui",
-  "https://example.com/updates/november",
-  "https://example.com/brand",
-];
-const codes = [
-  "a7Bx92Q",
-  "k9Tm4Wp",
-  "n3Rc8Ld",
-  "r8Jv2Hs",
-  "w5Fg6Za",
-  "s2Qd9Bk",
-  "p6Nx3Cv",
-  "b4Lt7Mf",
-];
-const counts = [1349, 824, 579, 363, 288, 146, 92, 48];
-function sampleVisitTime(now: number, index: number, linkIndex: number) {
-  const bucket = (index * 37 + linkIndex * 11) % 100;
-  const dayIndex = [10, 25, 37, 55, 66, 88, 100].findIndex(
-    (edge) => bucket < edge,
-  );
-  const midnight = new Date(now).setUTCHours(0, 0, 0, 0);
-  const available = dayIndex === 6 ? now - midnight : day;
-  return (
-    midnight - (6 - dayIndex) * day + ((index * 7919) % Math.max(1, available))
-  );
+
+type ApiLink = {
+  id: string;
+  originalUrl: string;
+  shortCode: string;
+  shortUrl: string;
+  createdAt: string;
+};
+
+type ApiAnalytics = Omit<LinkAnalytics, "recentClicks"> & {
+  recentClicks?: { at: string; referrer: string | null }[];
+};
+
+function emptyAnalytics(): LinkAnalytics {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  return {
+    totalClicks: 0,
+    clicksToday: 0,
+    clicksLast7Days: 0,
+    lastAccessedAt: null,
+    dailyClicks: Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(today);
+      date.setUTCDate(today.getUTCDate() - 6 + index);
+      return { date: date.toISOString().slice(0, 10), count: 0 };
+    }),
+    topReferrers: [],
+    recentClicks: [],
+  };
 }
-function seed(): LinkRecord[] {
-  const now = Date.now();
-  return titles.map((title, i) => ({
-    id: `demo-${i}`,
-    title,
-    url: urls[i],
-    code: codes[i],
-    createdAt: new Date(now - (i * 3 + 8) * day).toISOString(),
-    events: Array.from({ length: counts[i] }, (_, n) => ({
-      at: new Date(sampleVisitTime(now, n, i)).toISOString(),
-      referrer: [
-        "github.com",
-        "Direct / Unknown",
-        "github.com",
-        "x.com",
-        "linkedin.com",
-        "Direct / Unknown",
-        "dev.to",
-      ][n % 7],
-    })),
-  }));
-}
-function read(): LinkRecord[] {
-  const stored = localStorage.getItem(KEY);
-  if (!stored) {
-    const initial = seed();
-    localStorage.setItem(KEY, JSON.stringify(initial));
-    return initial;
+
+function mapLink(link: ApiLink, analytics = emptyAnalytics()): LinkRecord {
+  let title = link.originalUrl;
+  try {
+    title = new URL(link.originalUrl).hostname.replace(/^www\./, "");
+  } catch {
+    // Keep the destination as the title if it is not a parseable URL.
   }
-  const parsed: unknown = JSON.parse(stored);
-  if (
-    !Array.isArray(parsed) ||
-    parsed.some(
-      (l) =>
-        typeof l.id !== "string" ||
-        typeof l.code !== "string" ||
-        typeof l.url !== "string" ||
-        !Array.isArray(l.events),
-    )
-  )
-    throw new Error(
-      "Your local workspace could not be read. Restore your browser storage and try again.",
-    );
-  return parsed;
+
+  return {
+    id: link.id,
+    title,
+    url: link.originalUrl,
+    code: link.shortCode,
+    createdAt: link.createdAt,
+    analytics,
+  };
 }
-function save(links: LinkRecord[]) {
-  localStorage.setItem(KEY, JSON.stringify(links));
+
+async function loadAnalytics(id: string): Promise<LinkAnalytics> {
+  const response = await apiRequest<ApiAnalytics>(
+    `/links/${encodeURIComponent(id)}/analytics`,
+  );
+  return {
+    ...response,
+    recentClicks: (response.recentClicks ?? []).map((click) => ({
+      at: click.at,
+      referrer: click.referrer || "Direct / Unknown",
+    })),
+  };
 }
+
 export const linksRepository = {
-  async list() {
-    return read().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  async list(): Promise<LinkRecord[]> {
+    const links = await apiRequest<ApiLink[]>("/links");
+    const withAnalytics = await Promise.all(
+      links.map(async (link) => mapLink(link, await loadAnalytics(link.id))),
+    );
+    return withAnalytics.sort((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    );
   },
   async create(url: string): Promise<LinkRecord> {
-    const links = read();
-    let code: string;
-    do {
-      code = Array.from(
-        crypto.getRandomValues(new Uint8Array(7)),
-        (n) =>
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"[
-            n % 62
-          ],
-      ).join("");
-    } while (links.some((l) => l.code === code));
-    const record = {
-      id: crypto.randomUUID(),
-      title: new URL(url).hostname.replace(/^www\./, ""),
-      url,
-      code,
-      createdAt: new Date().toISOString(),
-      events: [],
-    };
-    save([record, ...links]);
-    return record;
+    const link = await apiRequest<ApiLink>("/links", {
+      method: "POST",
+      body: JSON.stringify({ originalUrl: url }),
+    });
+    return mapLink(link);
   },
-  async remove(id: string) {
-    save(read().filter((l) => l.id !== id));
-  },
-  async visit(code: string) {
-    const links = read();
-    const link = links.find((l) => l.code === code);
-    if (link) {
-      link.events.unshift({
-        at: new Date().toISOString(),
-        referrer: "Direct / Unknown",
-      });
-      save(links);
-    }
-    return link;
+  async remove(id: string): Promise<void> {
+    await apiRequest<boolean>(`/links/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
   },
 };
+
 export const shortUrl = (link: LinkRecord) =>
-  `${window.location.origin}/${link.code}`;
+  `${window.location.origin}/${encodeURIComponent(link.code)}`;
 export const displayUrl = (link: LinkRecord) =>
   `${window.location.host}/${link.code}`;
 export const formatNumber = (n: number) =>
@@ -155,35 +119,57 @@ export const formatDate = (date: string) =>
     year: "numeric",
     timeZone: "UTC",
   });
+
 export function metrics(links: LinkRecord[]) {
   const events = links
-    .flatMap((l) => l.events)
+    .flatMap((link) => link.analytics.recentClicks)
     .sort((a, b) => b.at.localeCompare(a.at));
-  const today = new Date().toISOString().slice(0, 10);
-  const daily = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(Date.now() - (6 - i) * day);
+  const dailyCounts = new Map<string, number>();
+  const sourceCounts = new Map<string, number>();
+
+  for (const link of links) {
+    for (const click of link.analytics.dailyClicks) {
+      dailyCounts.set(
+        click.date,
+        (dailyCounts.get(click.date) ?? 0) + click.count,
+      );
+    }
+    for (const referrer of link.analytics.topReferrers) {
+      sourceCounts.set(
+        referrer.domain,
+        (sourceCounts.get(referrer.domain) ?? 0) + referrer.count,
+      );
+    }
+  }
+
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const daily = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today);
+    date.setUTCDate(today.getUTCDate() - 6 + index);
     const key = date.toISOString().slice(0, 10);
-    return {
-      date,
-      count: events.filter((e) => e.at.slice(0, 10) === key).length,
-    };
+    return { date, count: dailyCounts.get(key) ?? 0 };
   });
-  const sources = Object.entries(
-    events.reduce<Record<string, number>>((a, e) => {
-      a[e.referrer] = (a[e.referrer] || 0) + 1;
-      return a;
-    }, {}),
-  ).sort((a, b) => b[1] - a[1]);
+  const sources = [...sourceCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const last = links
+    .map((link) => link.analytics.lastAccessedAt)
+    .filter((date): date is string => date !== null)
+    .sort((a, b) => b.localeCompare(a))[0];
+
   return {
     events,
     daily,
     sources,
-    total: events.length,
-    today: events.filter((e) => e.at.slice(0, 10) === today).length,
-    week: daily.reduce((a, d) => a + d.count, 0),
-    last: events[0]?.at,
+    total: links.reduce((sum, link) => sum + link.analytics.totalClicks, 0),
+    today: links.reduce((sum, link) => sum + link.analytics.clicksToday, 0),
+    week: links.reduce(
+      (sum, link) => sum + link.analytics.clicksLast7Days,
+      0,
+    ),
+    last,
   };
 }
+
 export function downloadCsv(links: LinkRecord[]) {
   const cell = (v: string | number) =>
     `"${String(v)
@@ -191,22 +177,22 @@ export function downloadCsv(links: LinkRecord[]) {
       .replaceAll('"', '""')}"`;
   const rows = [
     ["Title", "Destination", "Short URL", "Created at", "Clicks"],
-    ...links.map((l) => [
-      l.title,
-      l.url,
-      shortUrl(l),
-      l.createdAt,
-      l.events.length,
+    ...links.map((link) => [
+      link.title,
+      link.url,
+      shortUrl(link),
+      link.createdAt,
+      link.analytics.totalClicks,
     ]),
   ];
   const href = URL.createObjectURL(
-    new Blob([rows.map((r) => r.map(cell).join(",")).join("\r\n")], {
+    new Blob([rows.map((row) => row.map(cell).join(",")).join("\r\n")], {
       type: "text/csv;charset=utf-8;",
     }),
   );
-  const a = document.createElement("a");
-  a.href = href;
-  a.download = "linklab-links.csv";
-  a.click();
+  const anchor = document.createElement("a");
+  anchor.href = href;
+  anchor.download = "linklab-links.csv";
+  anchor.click();
   URL.revokeObjectURL(href);
 }
