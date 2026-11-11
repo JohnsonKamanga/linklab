@@ -172,13 +172,11 @@ export function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {visible.map((link, i) => (
+                  {visible.map((link) => (
                     <tr key={link.id}>
                       <td>
                         <div className="destination-cell">
-                          <div
-                            className={`destination-icon icon-tone-${i % 3}`}
-                          >
+                          <div className="destination-icon">
                             <Link2 size={18} />
                           </div>
                           <div className="destination-text">

@@ -13,7 +13,9 @@ export function MetricStrip({
             <Icon size={15} />
           </div>
           <div className="metric-value">{value}</div>
-          <div className="metric-note">{note}</div>
+          <div className="metric-note" title={note}>
+            {note}
+          </div>
         </div>
       ))}
     </div>

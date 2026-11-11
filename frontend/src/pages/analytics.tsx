@@ -183,10 +183,10 @@ export function Analytics() {
           {stats.sources.length ? (
             <div className="source-list">
               {stats.sources.map(([source, count], i) => (
-                <div className="source" key={source}>
+                <div className={`source tone-${i % 5}`} key={source}>
                   <div className="source-label">
                     <span>
-                      <span className={`source-dot tone-${i}`} />
+                      <span className="source-dot" />
                       {source}
                     </span>
                     <span>
@@ -253,8 +253,7 @@ export function Analytics() {
             <ol className="popular-list">
               {[...links]
                 .sort(
-                  (a, b) =>
-                    b.analytics.totalClicks - a.analytics.totalClicks,
+                  (a, b) => b.analytics.totalClicks - a.analytics.totalClicks,
                 )
                 .slice(0, 5)
                 .map((l, i) => (

@@ -77,7 +77,7 @@ export function QrCodeDialog({
           </span>
           <div className="min-w-0">
             <p className="truncate text-xs font-medium">{link.title}</p>
-            <p className="mt-0.5 break-all text-[11px] text-muted-foreground">
+            <p className="mt-0.5 break-all text-xs text-muted-foreground">
               {displayUrl(link)}
             </p>
           </div>
@@ -94,7 +94,7 @@ export function QrCodeDialog({
         </a>
       )}
       <div className="mt-3 text-center">
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           High-resolution PNG · Ready for print and digital
         </p>
       </div>

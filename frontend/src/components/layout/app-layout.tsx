@@ -9,23 +9,16 @@ import {
   BookOpen,
   ChevronRight,
 } from "lucide-react";
-import { useState } from "react";
+import { useTheme } from "@/lib/theme";
+import { Brand } from "@/components/brand";
 export function AppLayout() {
-  const [dark, setDark] = useState(
-    () => localStorage.getItem("linklab.theme") === "dark",
-  );
-  function toggleTheme() {
-    const next = !dark;
-    setDark(next);
-    localStorage.setItem("linklab.theme", next ? "dark" : "light");
-    document.documentElement.classList.toggle("dark", next);
-  }
+  const { dark, toggleTheme } = useTheme();
   return (
     <div className="app-shell">
       <header className="app-header">
         <div className="header-inner">
           <Link to="/" className="brand" aria-label="LinkLab home">
-            <img src="/linlklab-logo-text.png" alt="LinkLab" />
+            <Brand />
           </Link>
           <span className="header-divider">/</span>
           <div className="workspace">

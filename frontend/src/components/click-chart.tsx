@@ -22,9 +22,9 @@ export default function ClickChart({
         <Grid strokeDasharray="" numTicksRows={4} />
         <Area
           dataKey="count"
-          stroke="var(--primary)"
-          fill="var(--primary)"
-          fillOpacity={0.16}
+          stroke="var(--chart-line-primary)"
+          fill="var(--chart-line-primary)"
+          fillOpacity={0.08}
           strokeWidth={2.3}
           showValue
         />

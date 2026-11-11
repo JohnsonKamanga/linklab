@@ -4,8 +4,29 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/linlklab-logo-only.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f6f9f7" />
-    <meta name="description" content="Shorten smarter. A focused workspace for your links and the stories behind every click." />
+    <meta name="theme-color" content="#fafafa" />
+    <script>
+      // Resolve before styles load, including when storage is unavailable.
+      (() => {
+        let preference;
+        try {
+          preference = localStorage.getItem("linklab.theme");
+        } catch {}
+        const dark =
+          preference === "dark" ||
+          (preference !== "light" &&
+            matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+        document.querySelector('meta[name="theme-color"]').content = dark
+          ? "#0a0a0a"
+          : "#fafafa";
+      })();
+    </script>
+    <meta
+      name="description"
+      content="Shorten smarter. A focused workspace for your links and the stories behind every click."
+    />
     <title>LinkLab — Your links, in focus</title>
   </head>
   <body>
