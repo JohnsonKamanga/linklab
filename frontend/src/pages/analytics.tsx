@@ -24,6 +24,8 @@ import {
   metrics,
 } from "@/features/links/repository";
 import { NotFound } from "./not-found";
+import { ActionMenu } from "@/components/ui/action-menu";
+import { RecentActivityList } from "@/features/links/recent-activity-list";
 const ClickChart = lazy(() => import("@/components/click-chart"));
 export function Analytics() {
   const { id } = useParams();
@@ -42,20 +44,28 @@ export function Analytics() {
   const page = Math.min(activityPage, pages);
   return (
     <>
-      <Link className="back-link" to="/">
+      <Link className={`back-link ${link ? "" : "desktop-only"}`} to="/">
         <ArrowLeft size={14} />
         All links
       </Link>
       <div className="page-heading analytics-heading">
         <div>
-          <h1>{link ? "Behind every click." : "The bigger picture."}</h1>
-          <p>
+          <h1>
+            <span className="desktop-only">
+              {link ? "Behind every click." : "The bigger picture."}
+            </span>
+            <span className="mobile-only">
+              {link ? "Link analytics" : "Analytics"}
+            </span>
+          </h1>
+          <p className="desktop-only">
             {link
               ? "A closer look at how your link connects."
               : "One clear view of everything you share."}
           </p>
         </div>
         <Button
+          className="desktop-only"
           variant="outline"
           disabled={!links.length}
           onClick={() => downloadCsv(links)}
@@ -63,6 +73,19 @@ export function Analytics() {
           <ArrowDownToLine />
           Export links
         </Button>
+        <div className="mobile-only">
+          <ActionMenu
+            label="Analytics options"
+            items={[
+              {
+                label: "Export links",
+                icon: <ArrowDownToLine />,
+                disabled: !links.length,
+                onSelect: () => downloadCsv(links),
+              },
+            ]}
+          />
+        </div>
       </div>
       {link ? (
         <section className="link-summary">
@@ -83,8 +106,13 @@ export function Analytics() {
               </a>
             </div>
           </div>
-          <LinkActions link={link} expanded />
-          <div className="summary-meta">
+          <div className="desktop-only">
+            <LinkActions link={link} expanded />
+          </div>
+          <div className="mobile-only">
+            <LinkActions link={link} compact />
+          </div>
+          <div className="summary-meta desktop-only">
             <span>
               Destination{" "}
               <a href={link.url} target="_blank" rel="noreferrer">
@@ -97,15 +125,23 @@ export function Analytics() {
               Created {formatDate(link.createdAt)}
             </span>
           </div>
+          <details className="mobile-only link-summary-details">
+            <summary>Link details</summary>
+            <a href={link.url} target="_blank" rel="noreferrer">
+              {link.url}
+            </a>
+            <p>Created {formatDate(link.createdAt)}</p>
+          </details>
         </section>
       ) : (
-        <div className="analytics-context">
+        <div className="analytics-context desktop-only">
           <Globe2 size={16} />
           Workspace overview
           <span>{links.length} links · Live workspace activity</span>
         </div>
       )}
       <MetricStrip
+        mobilePrimary={["Total clicks", "Last 7 days"]}
         items={[
           {
             label: "Total clicks",
@@ -141,11 +177,34 @@ export function Analytics() {
           },
         ]}
       />
+      <details className="mobile-only analytics-more-metrics">
+        <summary>More metrics</summary>
+        <dl>
+          <div>
+            <dt>Clicks today · UTC</dt>
+            <dd>{formatNumber(stats.today)}</dd>
+          </div>
+          <div>
+            <dt>Last accessed · UTC</dt>
+            <dd>
+              {stats.last
+                ? new Date(stats.last).toLocaleString("en", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                    timeZone: "UTC",
+                  })
+                : "No visits yet"}
+            </dd>
+          </div>
+        </dl>
+      </details>
       <section className="chart-panel">
         <div className="section-heading">
           <div>
             <h2>Clicks over time</h2>
-            <p>A daily view of the connections you’re making.</p>
+            <p className="desktop-only">
+              A daily view of the connections you’re making.
+            </p>
           </div>
           <span className="period-badge">
             <CalendarDays size={14} />
@@ -176,7 +235,7 @@ export function Analytics() {
           <div className="section-heading">
             <div>
               <h2>Where clicks come from</h2>
-              <p>Your top referring sources.</p>
+              <p className="desktop-only">Your top referring sources.</p>
             </div>
             <Globe2 size={17} />
           </div>
@@ -215,7 +274,7 @@ export function Analytics() {
           <div className="section-heading">
             <div>
               <h2>{link ? "About this link" : "Your most-clicked links"}</h2>
-              <p>
+              <p className="desktop-only">
                 {link
                   ? "The details, all in one place."
                   : "Good things are getting around."}
@@ -277,7 +336,9 @@ export function Analytics() {
         <div className="section-heading">
           <div>
             <h2>Recent activity</h2>
-            <p>The latest recorded visits, newest first.</p>
+            <p className="desktop-only">
+              The latest recorded visits, newest first.
+            </p>
           </div>
           <input
             className="activity-search"
@@ -292,7 +353,10 @@ export function Analytics() {
         </div>
         {activity.length ? (
           <>
-            <div className="table-scroll">
+            <RecentActivityList
+              events={activity.slice((page - 1) * 5, page * 5)}
+            />
+            <div className="table-scroll desktop-only">
               <table className="activity-table">
                 <thead>
                   <tr>

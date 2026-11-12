@@ -2,27 +2,39 @@ import { useRef, useState, useEffect, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2, Link2, LoaderCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useFeedback } from "@/lib/feedback-context";
 import { useCreateLink } from "./queries";
 import { CopyButton } from "./link-actions";
 import { displayUrl, type LinkRecord } from "./repository";
-export function CreateLink() {
+export function CreateLink({
+  mobileOpen = true,
+  onExpand,
+  onCreated,
+}: {
+  mobileOpen?: boolean;
+  onExpand?: () => void;
+  onCreated?: () => void;
+}) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [created, setCreated] = useState<LinkRecord | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const create = useCreateLink();
-  const notify = useFeedback();
+  const previouslyOpen = useRef(mobileOpen);
+  useEffect(() => {
+    if (mobileOpen && !previouslyOpen.current) input.current?.focus();
+    previouslyOpen.current = mobileOpen;
+  }, [mobileOpen]);
   useEffect(() => {
     function shortcut(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        input.current?.focus();
+        onExpand?.();
+        requestAnimationFrame(() => input.current?.focus());
       }
     }
     window.addEventListener("keydown", shortcut);
     return () => window.removeEventListener("keydown", shortcut);
-  }, []);
+  }, [onExpand]);
   function submit(e: FormEvent) {
     e.preventDefault();
     setError("");
@@ -45,7 +57,7 @@ export function CreateLink() {
       onSuccess: (link) => {
         setCreated(link);
         setUrl("");
-        notify("Your short link is ready to share.");
+        onCreated?.();
       },
       onError: (error) =>
         setError(
@@ -56,14 +68,23 @@ export function CreateLink() {
     });
   }
   return (
-    <section className="create-panel" aria-labelledby="create-heading">
+    <section
+      id="link-composer"
+      className={`create-panel ${mobileOpen ? "composer-open" : "composer-closed"}`}
+      aria-labelledby="create-heading"
+    >
       <div className="create-heading">
         <div className="create-icon">
           <Link2 size={19} />
         </div>
         <div>
-          <h2 id="create-heading">Make room for a shorter link.</h2>
-          <p>Paste a destination. We’ll take care of the rest.</p>
+          <h2 id="create-heading">
+            <span className="desktop-only">Make room for a shorter link.</span>
+            <span className="mobile-only">Create a link</span>
+          </h2>
+          <p className="desktop-only">
+            Paste a destination. We’ll take care of the rest.
+          </p>
         </div>
       </div>
       <form noValidate onSubmit={submit}>
@@ -75,7 +96,7 @@ export function CreateLink() {
             aria-describedby={error ? "url-error" : "url-hint"}
             aria-invalid={!!error}
             type="url"
-            placeholder="https://example.com/something-worth-sharing"
+            placeholder="https://example.com/your-page"
             value={url}
             onChange={(e) => {
               setUrl(e.target.value);
@@ -101,7 +122,7 @@ export function CreateLink() {
         </p>
       ) : (
         <p id="url-hint" className="input-hint">
-          No sign-up. No extra steps. Just a link that fits.
+          Paste the full URL, including https://.
         </p>
       )}
       {created && (
@@ -112,7 +133,7 @@ export function CreateLink() {
             {displayUrl(created)}
           </a>
           <div className="ml-auto flex items-center gap-2">
-            <CopyButton link={created} label />
+            <CopyButton link={created} label quiet />
             <Link
               className="text-sm underline underline-offset-4"
               to={`/links/${created.id}`}

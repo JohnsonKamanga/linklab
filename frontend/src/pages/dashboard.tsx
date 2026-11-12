@@ -14,6 +14,8 @@ import {
   TrendingUp,
   Trophy,
   X,
+  Plus,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MetricStrip } from "@/components/metrics";
@@ -28,11 +30,14 @@ import {
   metrics,
 } from "@/features/links/repository";
 import { DataState } from "@/components/data-state";
+import { ActionMenu } from "@/components/ui/action-menu";
+import { MobileLinkList } from "@/features/links/mobile-link-list";
 export function Dashboard() {
   const query = useLinks();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(1);
+  const [composerOpen, setComposerOpen] = useState(false);
   if (!query.data) return <DataState query={query} />;
   const links = query.data;
   const stats = metrics(links);
@@ -57,10 +62,15 @@ export function Dashboard() {
   const visible = filtered.slice((currentPage - 1) * 6, currentPage * 6);
   return (
     <>
-      <div className="page-heading">
+      <div className="page-heading dashboard-heading">
         <div>
-          <h1>Your links, in focus.</h1>
-          <p>Everything you share. A little more connected.</p>
+          <h1>
+            <span className="desktop-only">Your links, in focus.</span>
+            <span className="mobile-only">Links</span>
+          </h1>
+          <p className="desktop-only">
+            Everything you share. A little more connected.
+          </p>
         </div>
         <span className="heading-date">
           {new Date().toLocaleDateString("en", {
@@ -69,40 +79,68 @@ export function Dashboard() {
             year: "numeric",
           })}
         </span>
+        {!!links.length && (
+          <Button
+            className="mobile-only new-link-button"
+            aria-expanded={composerOpen}
+            aria-controls="link-composer"
+            onClick={() => setComposerOpen(!composerOpen)}
+          >
+            {composerOpen ? <X /> : <Plus />}
+            {composerOpen ? "Close" : "New link"}
+          </Button>
+        )}
       </div>
-      <CreateLink />
-      <MetricStrip
-        items={[
-          {
-            label: "Total links",
-            value: formatNumber(links.length),
-            note: "A home for everything you share",
-            icon: Link2,
-          },
-          {
-            label: "Total clicks",
-            value: formatNumber(stats.total),
-            note: "Across all your links",
-            icon: MousePointer2,
-          },
-          {
-            label: "Clicks this week",
-            value: formatNumber(stats.week),
-            note: "Last 7 days · UTC",
-            icon: TrendingUp,
-          },
-          {
-            label: "Top performing link",
-            value: top?.analytics.totalClicks ? `/${top.code}` : "—",
-            note: top?.analytics.totalClicks
-              ? `${formatNumber(top.analytics.totalClicks)} clicks · ${top.title}`
-              : "Your next great link awaits",
-            icon: Trophy,
-          },
-        ]}
+      <CreateLink
+        mobileOpen={composerOpen || !links.length}
+        onExpand={() => setComposerOpen(true)}
+        onCreated={() => setComposerOpen(true)}
       />
-      <section className="links-panel" aria-labelledby="links-heading">
-        <div className="table-heading">
+      {!!links.length && (
+        <p className="mobile-only workspace-summary">
+          {formatNumber(links.length)} {links.length === 1 ? "link" : "links"}
+          <span aria-hidden="true">·</span>
+          {formatNumber(stats.week)} clicks this week
+        </p>
+      )}
+      <div className="desktop-only">
+        <MetricStrip
+          items={[
+            {
+              label: "Total links",
+              value: formatNumber(links.length),
+              note: "A home for everything you share",
+              icon: Link2,
+            },
+            {
+              label: "Total clicks",
+              value: formatNumber(stats.total),
+              note: "Across all your links",
+              icon: MousePointer2,
+            },
+            {
+              label: "Clicks this week",
+              value: formatNumber(stats.week),
+              note: "Last 7 days · UTC",
+              icon: TrendingUp,
+            },
+            {
+              label: "Top performing link",
+              value: top?.analytics.totalClicks ? `/${top.code}` : "—",
+              note: top?.analytics.totalClicks
+                ? `${formatNumber(top.analytics.totalClicks)} clicks · ${top.title}`
+                : "Your next great link awaits",
+              icon: Trophy,
+            },
+          ]}
+        />
+      </div>
+      <section
+        className="links-panel"
+        data-empty={!links.length}
+        aria-labelledby="links-heading"
+      >
+        <div className="table-heading desktop-only">
           <div className="flex items-center gap-2.5">
             <h2 id="links-heading">All links</h2>
             <span className="count-badge">{links.length}</span>
@@ -121,7 +159,7 @@ export function Dashboard() {
             <Search size={16} />
             <input
               aria-label="Search links"
-              placeholder="Search by title, destination, or short link…"
+              placeholder="Search links…"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -140,7 +178,7 @@ export function Dashboard() {
               </button>
             )}
           </div>
-          <label className="sort-control">
+          <label className="sort-control desktop-only">
             <ArrowDown size={14} />
             <span className="sr-only">Sort links</span>
             <select
@@ -155,10 +193,49 @@ export function Dashboard() {
               <option value="clicks">Most clicks</option>
             </select>
           </label>
+          <div className="mobile-only mobile-list-options">
+            <ActionMenu
+              label="List options"
+              title="Sort links"
+              items={[
+                ...[
+                  { value: "newest", label: "Newest first" },
+                  { value: "oldest", label: "Oldest first" },
+                  { value: "clicks", label: "Most clicks" },
+                ].map((option) => ({
+                  label: option.label,
+                  icon:
+                    sort === option.value ? (
+                      <Check />
+                    ) : (
+                      <span className="menu-icon-space" />
+                    ),
+                  onSelect: () => {
+                    setSort(option.value);
+                    setPage(1);
+                  },
+                })),
+                {
+                  label: "Export CSV",
+                  icon: <ArrowDownToLine />,
+                  disabled: !filtered.length,
+                  onSelect: () => downloadCsv(filtered),
+                },
+              ]}
+            >
+              <ArrowDown size={14} />
+              {sort === "clicks"
+                ? "Clicks"
+                : sort === "oldest"
+                  ? "Oldest"
+                  : "Newest"}
+            </ActionMenu>
+          </div>
         </div>
         {visible.length ? (
           <>
-            <div className="table-scroll">
+            <MobileLinkList links={visible} />
+            <div className="table-scroll desktop-only">
               <table className="links-table">
                 <thead>
                   <tr>
@@ -225,7 +302,8 @@ export function Dashboard() {
             </div>
             <div className="table-footer">
               <span>
-                Showing {(currentPage - 1) * 6 + 1}–
+                <span className="desktop-only">Showing </span>
+                {(currentPage - 1) * 6 + 1}–
                 {Math.min(currentPage * 6, filtered.length)} of{" "}
                 {filtered.length} links
               </span>
@@ -273,7 +351,7 @@ export function Dashboard() {
           </div>
         )}
       </section>
-      <div className="under-table">
+      <div className="under-table desktop-only">
         <span>
           <span className="status-dot" />
           Your links are saved to the LinkLab workspace.

@@ -8,9 +8,11 @@ import {
   Moon,
   BookOpen,
   ChevronRight,
+  Menu,
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { Brand } from "@/components/brand";
+import { ActionMenu } from "@/components/ui/action-menu";
 export function AppLayout() {
   const { dark, toggleTheme } = useTheme();
   return (
@@ -20,8 +22,8 @@ export function AppLayout() {
           <Link to="/" className="brand" aria-label="LinkLab home">
             <Brand />
           </Link>
-          <span className="header-divider">/</span>
-          <div className="workspace">
+          <span className="header-divider desktop-only">/</span>
+          <div className="workspace desktop-only">
             <span className="workspace-avatar">P</span>
             <span>Personal workspace</span>
           </div>
@@ -35,7 +37,7 @@ export function AppLayout() {
               <ArrowUpRight size={14} />
             </Link>
             <button
-              className="icon-button"
+              className="icon-button desktop-only"
               aria-label={
                 dark ? "Switch to light theme" : "Switch to dark theme"
               }
@@ -43,6 +45,24 @@ export function AppLayout() {
             >
               {dark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
+            <div className="mobile-only workspace-menu">
+              <ActionMenu
+                label="Workspace menu"
+                title="Personal workspace"
+                items={[
+                  {
+                    label: dark
+                      ? "Switch to light theme"
+                      : "Switch to dark theme",
+                    icon: dark ? <Sun /> : <Moon />,
+                    onSelect: toggleTheme,
+                  },
+                  { label: "Quick guide", icon: <BookOpen />, to: "/guide" },
+                ]}
+              >
+                <Menu size={20} />
+              </ActionMenu>
+            </div>
           </div>
         </div>
         <div className="nav-inner">
@@ -63,10 +83,10 @@ export function AppLayout() {
         <Outlet />
       </main>
       <footer className="app-footer">
-        <span>
+        <span className="desktop-only">
           LinkLab <span className="footer-slash">/</span> Shorten smarter.
         </span>
-        <span className="footer-demo">
+        <span className="footer-demo desktop-only">
           <span className="status-dot" /> Demo data · Saved in this browser
         </span>
         <Link to="/guide">

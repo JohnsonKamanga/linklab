@@ -86,14 +86,17 @@ test("narrow dark layouts retain readable text and reachable actions", async ({
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/");
   await expect(
-    page.getByRole("link", { name: "example.com", exact: true }),
+    page.getByRole("link", { name: "example.com/design-system", exact: true }),
   ).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     320,
   );
   await expect(page.locator(".destination-url")).toHaveCSS("font-size", "12px");
   await page
-    .getByRole("button", { name: "QR code for design1", exact: true })
+    .getByRole("button", { name: "More actions for design1", exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Show QR code", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByRole("dialog").getByRole("img")).toBeVisible();
